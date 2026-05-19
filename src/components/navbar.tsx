@@ -16,7 +16,7 @@ export default function Navbar() {
 
     <nav id="home-bar">
 
-      <div id="brand">BODEGA EAC</div>
+      <div id="brand">SUPERMARKET</div>
 
       {/* MENU CENTRAL */}
       <div className="nav-center">

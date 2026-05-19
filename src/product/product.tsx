@@ -4,6 +4,9 @@ import Navbar from "../components/navbar";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// 🚨 TESTE IMPORTANTE
+console.log("🔥 API_URL:", API_URL);
+
 export default function Product() {
 
   const token = Cookies.get("token");
@@ -26,17 +29,28 @@ export default function Product() {
 
     try {
 
-      const res = await fetch(`${API_URL}/api/product`, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      console.log("🔥 BUSCANDO PRODUTOS EM:");
+      console.log(`${API_URL}/api/product`);
+
+      const res = await fetch(
+        `${API_URL}/api/product`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      });
+      );
 
       const data = await res.json();
 
+      console.log("🔥 RESPOSTA API:");
+      console.log(data);
+
       setProdutos(data);
 
-    } catch {
+    } catch (error) {
+
+      console.log(error);
 
       alert("Erro ao buscar produtos");
 
@@ -44,7 +58,9 @@ export default function Product() {
   };
 
   useEffect(() => {
+
     buscar();
+
   }, []);
 
   /* =========================
@@ -52,31 +68,45 @@ export default function Product() {
   ========================= */
   const criarProduto = async () => {
 
-    if (!novo.nome || !novo.preco || !novo.quantidade) {
+    if (
+      !novo.nome ||
+      !novo.preco ||
+      !novo.quantidade
+    ) {
+
       alert("Preencha todos os campos");
+
       return;
+
     }
 
     setLoading(true);
 
     try {
 
-      const response = await fetch(`${API_URL}/api/product`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nome: novo.nome,
-          preco: Number(novo.preco),
-          quantidade: Number(novo.quantidade),
-          categoria: novo.categoria
-        })
-      });
+      const response = await fetch(
+        `${API_URL}/api/product`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+
+          body: JSON.stringify({
+            nome: novo.nome,
+            preco: Number(novo.preco),
+            quantidade: Number(novo.quantidade),
+            categoria: novo.categoria
+          })
+        }
+      );
 
       if (!response.ok) {
+
         throw new Error();
+
       }
 
       setNovo({
@@ -110,16 +140,21 @@ export default function Product() {
 
     try {
 
-      await fetch(`${API_URL}/api/product/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          [campo]: valor
-        })
-      });
+      await fetch(
+        `${API_URL}/api/product/${id}`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+
+          body: JSON.stringify({
+            [campo]: valor
+          })
+        }
+      );
 
       buscar();
 
@@ -135,18 +170,24 @@ export default function Product() {
   ========================= */
   const deletar = async (id: string) => {
 
-    const confirmar = confirm("Deseja excluir este produto?");
+    const confirmar = confirm(
+      "Deseja excluir este produto?"
+    );
 
     if (!confirmar) return;
 
     try {
 
-      await fetch(`${API_URL}/api/product/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
+      await fetch(
+        `${API_URL}/api/product/${id}`,
+        {
+          method: "DELETE",
+
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      });
+      );
 
       buscar();
 
@@ -216,6 +257,7 @@ export default function Product() {
               })
             }
           >
+
             <option value="ALIMENTO">
               🍔 Alimento
             </option>
@@ -231,6 +273,7 @@ export default function Product() {
             <option value="ARTIGO_RELIGIOSO">
               🙇🏻‍♂️ Artigo Religioso
             </option>
+
           </select>
 
           <button
@@ -238,7 +281,13 @@ export default function Product() {
             onClick={criarProduto}
             disabled={loading}
           >
-            {loading ? "Adicionando..." : "Adicionar"}
+
+            {
+              loading
+                ? "Adicionando..."
+                : "Adicionar"
+            }
+
           </button>
 
         </div>
@@ -296,7 +345,9 @@ export default function Product() {
             />
 
             <select
-              defaultValue={p.categoria || "ALIMENTO"}
+              defaultValue={
+                p.categoria || "ALIMENTO"
+              }
               onChange={(e) =>
                 atualizar(
                   p._id,
@@ -305,6 +356,7 @@ export default function Product() {
                 )
               }
             >
+
               <option value="ALIMENTO">
                 🍔 Alimento
               </option>
@@ -320,6 +372,7 @@ export default function Product() {
               <option value="ARTIGO_RELIGIOSO">
                 🙇🏻‍♂️ Artigo Religioso
               </option>
+
             </select>
 
             <button
