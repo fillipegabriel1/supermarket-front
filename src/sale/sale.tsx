@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import Navbar from '../components/navbar';
+import Navbar from "../components/navbar";
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-
 
 const categorias = {
   ALIMENTO: "🍔 Alimentos",
@@ -14,131 +11,239 @@ const categorias = {
   ARTIGO_RELIGIOSO: "🙇🏻‍♂️ Artigos Religiosos"
 };
 
-
 export default function Sale() {
 
-    const handleLogout = () => {
-    Cookies.remove("token");
-    navigate("/login");
-    };
-
-  const navigate = useNavigate();
+  const token = Cookies.get("token");
 
   const [codigo, setCodigo] = useState("");
+
   const [cliente, setCliente] = useState<any>(null);
+
   const [produtos, setProdutos] = useState<any[]>([]);
+
   const [carrinho, setCarrinho] = useState<any[]>([]);
+
+  const [loading, setLoading] = useState(false);
 
   /* =========================
      BUSCAR CLIENTE
   ========================= */
   const buscarCliente = async () => {
+
     if (!codigo) return;
 
-    const res = await fetch(`${API_URL}/api/client/${codigo}`);
-    const data = await res.json();
+    try {
 
-    if (res.ok) {
-      setCliente(data);
-      buscarProdutos();
-    } else {
-      alert("Cliente não encontrado");
-      setCliente(null);
+      const res = await fetch(
+        `${API_URL}/api/client/${codigo}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+
+        setCliente(data);
+
+        buscarProdutos();
+
+      } else {
+
+        alert("Cliente não encontrado");
+
+        setCliente(null);
+
+      }
+
+    } catch {
+
+      alert("Erro ao buscar cliente");
+
     }
   };
 
   /* =========================
-     PRODUTOS
+     BUSCAR PRODUTOS
   ========================= */
   const buscarProdutos = async () => {
-    const res = await fetch(`${API_URL}/api/product`);
-    const data = await res.json();
-    setProdutos(data);
+
+    try {
+
+      const res = await fetch(
+        `${API_URL}/api/product`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = await res.json();
+
+      setProdutos(data);
+
+    } catch {
+
+      alert("Erro ao buscar produtos");
+
+    }
   };
 
   useEffect(() => {
+
     const interval = setInterval(() => {
-      if (cliente) buscarProdutos();
+
+      if (cliente) {
+        buscarProdutos();
+      }
+
     }, 3000);
 
     return () => clearInterval(interval);
+
   }, [cliente]);
 
   /* =========================
-     CARRINHO
+     ADICIONAR CARRINHO
   ========================= */
-
   const adicionar = (p: any) => {
 
-    const item = carrinho.find(i => i._id === p._id);
+    const item = carrinho.find(
+      (i) => i._id === p._id
+    );
+
+    if (
+      item &&
+      item.quantidade >= p.quantidade
+    ) {
+      return;
+    }
 
     if (item) {
-      setCarrinho(carrinho.map(i =>
-        i._id === p._id
-          ? { ...i, quantidade: i.quantidade + 1 }
-          : i
-      ));
+
+      setCarrinho(
+        carrinho.map((i) =>
+          i._id === p._id
+            ? {
+                ...i,
+                quantidade: i.quantidade + 1
+              }
+            : i
+        )
+      );
+
     } else {
-      setCarrinho([...carrinho, {
-        _id: p._id,
-        nome: p.nome,
-        preco: p.preco,
-        quantidade: 1
-      }]);
+
+      setCarrinho([
+        ...carrinho,
+        {
+          _id: p._id,
+          nome: p.nome,
+          preco: p.preco,
+          quantidade: 1
+        }
+      ]);
+
     }
   };
 
+  /* =========================
+     DIMINUIR
+  ========================= */
   const diminuir = (p: any) => {
+
     setCarrinho(
+
       carrinho
-        .map(i =>
+        .map((i) =>
           i._id === p._id
-            ? { ...i, quantidade: i.quantidade - 1 }
+            ? {
+                ...i,
+                quantidade: i.quantidade - 1
+              }
             : i
         )
-        .filter(i => i.quantidade > 0)
+        .filter((i) => i.quantidade > 0)
+
     );
   };
 
+  /* =========================
+     TOTAL
+  ========================= */
   const total = carrinho.reduce(
-    (acc, item) => acc + item.preco * item.quantidade,
+    (acc, item) =>
+      acc + item.preco * item.quantidade,
     0
   );
 
   /* =========================
-     FINALIZAR
+     FINALIZAR VENDA
   ========================= */
-
   const finalizar = async () => {
 
     if (!carrinho.length) {
+
       alert("Carrinho vazio");
+
       return;
+
     }
 
-    const response = await fetch(`${API_URL}/api/sale`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        codigo: Number(codigo),
-        itens: carrinho
-      })
-    });
+    setLoading(true);
 
-    const data = await response.json();
+    try {
 
-    if (response.ok) {
-      alert("Venda realizada!");
-      setCarrinho([]);
-      buscarCliente();
-    } else {
-      alert(data.message);
+      const response = await fetch(
+        `${API_URL}/api/sale`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            codigo: Number(codigo),
+            itens: carrinho
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        alert("Venda realizada com sucesso!");
+
+        setCarrinho([]);
+
+        buscarCliente();
+
+        buscarProdutos();
+
+      } else {
+
+        alert(data.message);
+
+      }
+
+    } catch {
+
+      alert("Erro ao finalizar venda");
+
+    } finally {
+
+      setLoading(false);
+
     }
   };
 
   return (
+
     <div className="home-page">
 
       <Navbar />
@@ -147,100 +252,186 @@ export default function Sale() {
 
         <h2>Venda</h2>
 
-        {/* BUSCA */}
+        {/* =========================
+            BUSCA CLIENTE
+        ========================= */}
         <div className="box">
+
           <input
             placeholder="Código do cliente"
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            onChange={(e) =>
+              setCodigo(e.target.value)
+            }
           />
-          <button onClick={buscarCliente}>Buscar</button>
+
+          <button onClick={buscarCliente}>
+            Buscar
+          </button>
+
         </div>
 
-        {/* CLIENTE */}
+        {/* =========================
+            CLIENTE
+        ========================= */}
         {cliente && (
+
           <div className="cliente-card">
-            <h3>{cliente.nome}</h3>
+
+            <h3>
+              {cliente.nome}
+            </h3>
+
             <p className="saldo">
               Saldo: R$ {cliente.saldo.toFixed(2)}
             </p>
+
           </div>
+
         )}
 
-        {/* PRODUTOS */}
-        {Object.entries(categorias).map(([key, label]) => {
+        {/* =========================
+            PRODUTOS
+        ========================= */}
+        {Object.entries(categorias).map(
+          ([key, label]) => {
 
-          const lista = produtos.filter(
-            p => p.categoria === key && p.quantidade > 0
-          );
+            const lista = produtos.filter(
+              (p) =>
+                p.categoria === key &&
+                p.quantidade > 0
+            );
 
-          if (!lista.length) return null;
+            if (!lista.length) return null;
 
-          return (
-            <div key={key} className="categoria">
+            return (
 
-              <h3>{label}</h3>
+              <div
+                key={key}
+                className="categoria"
+              >
 
-              {lista.map((p) => {
+                <h3>{label}</h3>
 
-  const item = carrinho.find(i => i._id === p._id);
+                {lista.map((p) => {
 
-  return (
-    <div key={p._id} className="produto-linha">
+                  const item = carrinho.find(
+                    (i) => i._id === p._id
+                  );
 
-  <div className="produto-nome">
-    {p.nome}
-  </div>
+                  return (
 
-  <div className="produto-estoque">
-    {p.quantidade} disp
-  </div>
+                    <div
+                      key={p._id}
+                      className="produto-linha"
+                    >
 
-  <div className="produto-preco">
-    R$ {p.preco.toFixed(2)}
-  </div>
+                      <div className="produto-nome">
+                        {p.nome}
+                      </div>
 
-  <div className="controle">
-    <button onClick={() => diminuir(p)}>-</button>
+                      <div className="produto-estoque">
+                        {p.quantidade} disp
+                      </div>
 
-    <span className="qtd">
-      {item?.quantidade || 0}
-    </span>
+                      <div className="produto-preco">
+                        R$ {p.preco.toFixed(2)}
+                      </div>
 
-    <button onClick={() => adicionar(p)}>+</button>
-  </div>
+                      <div className="controle">
 
-</div>
-  );
-})}
+                        <button
+                          onClick={() => diminuir(p)}
+                        >
+                          -
+                        </button>
 
-            </div>
-          );
-        })}
+                        <span className="qtd">
+                          {item?.quantidade || 0}
+                        </span>
 
-        {/* CARRINHO */}
+                        <button
+                          onClick={() => adicionar(p)}
+                          disabled={
+                            item?.quantidade >=
+                            p.quantidade
+                          }
+                        >
+                          +
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  );
+                })}
+
+              </div>
+
+            );
+          }
+        )}
+
+        {/* =========================
+            CARRINHO
+        ========================= */}
         {carrinho.length > 0 && (
+
           <div className="carrinho-fixo">
 
-            <h3>Carrinho</h3>
+            <h3>
+              Carrinho
+            </h3>
 
-            {carrinho.map(item => (
-              <div key={item._id} className="carrinho-item">
-                <span>{item.nome}</span>
-                <span>{item.quantidade}x</span>
-                <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
+            {carrinho.map((item) => (
+
+              <div
+                key={item._id}
+                className="carrinho-item"
+              >
+
+                <span>
+                  {item.nome}
+                </span>
+
+                <span>
+                  {item.quantidade}x
+                </span>
+
+                <span>
+                  R$ {
+                    (
+                      item.preco *
+                      item.quantidade
+                    ).toFixed(2)
+                  }
+                </span>
+
               </div>
+
             ))}
 
             <div className="total">
+
               Total: R$ {total.toFixed(2)}
+
             </div>
 
-            <button className="btn-finalizar" onClick={finalizar}>
-              Finalizar Venda
+            <button
+              className="btn-finalizar"
+              onClick={finalizar}
+              disabled={loading}
+            >
+              {
+                loading
+                  ? "Finalizando..."
+                  : "Finalizar Venda"
+              }
             </button>
 
           </div>
+
         )}
 
       </div>

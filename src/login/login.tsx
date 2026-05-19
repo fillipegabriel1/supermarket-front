@@ -1,13 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './login.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
 export default function Login() {
+
     const navigate = useNavigate();
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const token = Cookies.get('token');
+
+        if (token) {
+            navigate('/home');
+        }
+    }, [navigate]);
 
     const sendRequest = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,36 +30,59 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, pass: password }),
-            });
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/user/login`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email,
+                        pass: password,
+                    }),
+                }
+            );
 
             const json = await response.json();
 
             if (response.ok) {
-                Cookies.set('token', json.token, { expires: 1 });
-                navigate('/home'); 
+
+                Cookies.set('token', json.token, {
+                    expires: 1,
+                });
+
+                navigate('/home');
+
             } else {
+
                 alert(json.message || 'Login failed');
+
             }
+
         } catch (error) {
+
             alert('Erro ao conectar com servidor');
+
         } finally {
+
             setLoading(false);
+
         }
     };
 
     return (
         <div id="page">
+
             <div id="login-container">
+
                 <div id="left-container">
-                    <h2>Bem vindo a nossa Bodega EAC!</h2>
+
+                    <h2>Bem vindo ao Supermarket!</h2>
 
                     <form id="form-login" onSubmit={sendRequest}>
+
                         <input
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -69,13 +102,27 @@ export default function Login() {
                         <button type="submit" disabled={loading}>
                             {loading ? 'Entrando...' : 'Login'}
                         </button>
+
                     </form>
+
+                    <Link to="/signup" className="signup-link">
+                        Criar conta
+                    </Link>
+
                 </div>
 
                 <div id="right-container">
-                    <img src="/logo-eac.png" alt="Logo Bodega" className="login-logo" />
+
+                    <img
+                        src="/logo-eac.png"
+                        alt="Logo Supermarket"
+                        className="login-logo"
+                    />
+
                 </div>
+
             </div>
+
         </div>
     );
 }
